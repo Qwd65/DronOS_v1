@@ -5,6 +5,12 @@ from game.utils import draw_ui
 
 class GameManager:
     def __init__(self, mode='player'):
+        # Original map size likely here
+        self.last_spawn_time = pygame.time.get_ticks()
+        self.screen_width = 800  # New smaller width
+        self.screen_height = 600  # New smaller height
+        self.bg_color = (50, 50, 50)  # Gray background for contrast
+        self.boundary_color = (255, 0, 0)  # Red boundary lines for clarity
         self.mode = mode
         self.drones = [Drone(i) for i in range(5)]
         self.intruders = []
@@ -20,6 +26,10 @@ class GameManager:
         while self.time_left > 0:
             self.handle_events()
             self.update_game_state()
+            self.draw_boundary(self.screen)
+            if pygame.time.get_ticks() - self.last_spawn_time > self.intruder_spawn_time:
+                self.spawn_intruder()
+                self.last_spawn_time = pygame.time.get_ticks()
             draw_ui(screen, self.drones, self.intruders, self.score, self.time_left)
             pygame.display.flip()
             clock.tick(60)
@@ -60,4 +70,11 @@ class GameManager:
                 if drone.check_collision(intruder):
                     self.intruders.remove(intruder)
                     self.score += 1
-
+                    
+    def spawn_intruder(self):
+        if len(self.intruders) < 6:  # Max 6 intruders
+            new_intruder = Intruder(random.randint(0, self.screen_width), random.randint(0, self.screen_height))
+            self.intruders.append(new_intruder)
+            
+    def draw_boundary(self, screen):
+        pygame.draw.rect(screen, self.boundary_color, pygame.Rect(0, 0, self.screen_width, self.screen_height), 5)
