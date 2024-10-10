@@ -2,8 +2,12 @@ import pygame
 import random
 
 class Intruder:
-    def __init__(self):
-        self.position = [random.randint(100, 700), random.randint(100, 500)]  # Стартовая позиция
+    def __init__(self, x=None, y=None):
+        # Если x и y не указаны, выбираем случайные значения
+        if x is None or y is None:
+            self.position = [random.randint(100, 700), random.randint(100, 500)]  # Стартовая позиция
+        else:
+            self.position = [x, y]  # Задаем начальную позицию
         self.speed = 3  # Скорость нарушителя
         self.direction = [random.choice([-1, 1]), random.choice([-1, 1])]  # Направление движения
 

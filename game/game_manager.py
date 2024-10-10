@@ -1,26 +1,27 @@
 import pygame
+import random  # Добавлен импорт
 from game.drone import Drone
 from game.intruder import Intruder
 from game.utils import draw_ui
 
 class GameManager:
     def __init__(self, mode='player'):
-        # Original map size likely here
         self.last_spawn_time = pygame.time.get_ticks()
-        self.screen_width = 800  # New smaller width
-        self.screen_height = 600  # New smaller height
-        self.bg_color = (50, 50, 50)  # Gray background for contrast
-        self.boundary_color = (255, 0, 0)  # Red boundary lines for clarity
+        self.intruder_spawn_time = 3000  # Время между спавнами нарушителей
+        self.screen_width = 800
+        self.screen_height = 600
+        self.bg_color = (50, 50, 50)
+        self.boundary_color = (255, 0, 0)
         self.mode = mode
         self.drones = [Drone(i) for i in range(5)]
         self.intruders = []
         self.selected_drone = None
         self.score = 0
-        self.time_left = 60  # Время игры в секундах
+        self.time_left = 60
 
     def run(self):
         pygame.init()
-        screen = pygame.display.set_mode((800, 600))
+        self.screen = pygame.display.set_mode((800, 600))
         clock = pygame.time.Clock()
 
         while self.time_left > 0:
@@ -30,10 +31,10 @@ class GameManager:
             if pygame.time.get_ticks() - self.last_spawn_time > self.intruder_spawn_time:
                 self.spawn_intruder()
                 self.last_spawn_time = pygame.time.get_ticks()
-            draw_ui(screen, self.drones, self.intruders, self.score, self.time_left)
+            draw_ui(self.screen, self.drones, self.intruders, self.score, self.time_left)
             pygame.display.flip()
             clock.tick(60)
-            self.time_left -= 1 / 60  # Обновляем таймер
+            self.time_left -= 1 / 60
 
         print(f"Игра окончена! Вы набрали {self.score} очков.")
 
@@ -49,13 +50,11 @@ class GameManager:
                         self.selected_drone.move_to(event.pos)
 
     def update_game_state(self):
-        # Обновляем состояние дронов и нарушителей
         for drone in self.drones:
             drone.update()
         for intruder in self.intruders:
             intruder.update()
 
-        # Проверяем столкновения и начисляем очки
         self.check_collisions()
 
     def select_drone(self, position):
@@ -78,3 +77,48 @@ class GameManager:
             
     def draw_boundary(self, screen):
         pygame.draw.rect(screen, self.boundary_color, pygame.Rect(0, 0, self.screen_width, self.screen_height), 5)
+    
+    def get_state(self):
+        # Собираем состояние игры
+        drone_positions = [drone.position for drone in self.drones]
+        intruder_positions = [intruder.position for intruder in self.intruders]
+        score = self.score
+        time_left = self.time_left
+
+        # Возвращаем состояние как словарь или кортеж
+        return {
+            'drone_positions': drone_positions,
+            'intruder_positions': intruder_positions,
+            'score': score,
+            'time_left': time_left
+        }
+        
+    def get_target_actions(self):
+        # Логика для определения целевых действий для дронов
+        actions = []
+        for drone in self.drones:
+            # Определите, какое действие должен предпринять дрон
+            # Например, перемещение к ближайшему нарушителю
+            nearest_intruder = self.get_nearest_intruder(drone)
+            if nearest_intruder:
+                actions.append({'drone_id': drone.index, 'target_position': nearest_intruder.position})
+            else:
+                actions.append({'drone_id': drone.index, 'target_position': drone.position})  # Остается на месте
+
+        return actions
+
+    def get_nearest_intruder(self, drone):
+        # Поиск ближайшего нарушителя
+        nearest_intruder = None
+        min_distance = float('inf')
+        for intruder in self.intruders:
+            distance = self.calculate_distance(drone.position, intruder.position)
+            if distance < min_distance:
+                min_distance = distance
+                nearest_intruder = intruder
+        return nearest_intruder
+
+    def calculate_distance(self, pos1, pos2):
+        # Вычисление расстояния между двумя позициями
+        return ((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2) ** 0.5
+
